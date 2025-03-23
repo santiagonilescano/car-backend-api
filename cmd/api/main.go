@@ -2,6 +2,7 @@ package main
 
 import (
 	"car-service/internal/application/commands"
+	"car-service/internal/application/queries"
 	"car-service/internal/application/services"
 	"car-service/internal/domain/repositories"
 	"car-service/internal/infrastructure/api/handlers"
@@ -45,6 +46,7 @@ func run() error {
 
 	newCarCommand := commands.NewNewCarCommand(carService)
 	mediator.Register("CreateCar", newCarCommand)
+	mediator.RegisterQuery("GetCars", queries.NewGetCarsQuery(carService))
 
 	carHandler := handlers.NewCarHandler(mediator)
 

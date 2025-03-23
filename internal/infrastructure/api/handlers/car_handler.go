@@ -26,10 +26,21 @@ func (h *CarHandler) CreateCar(c *gin.Context) {
 	}
 
 	// Usar el mediador para enviar el comando
-	if err := h.mediator.Send("CreateCar", &car); err != nil {
+	request := api.CommandRequest[any]{Data: car}
+	if _, err := h.mediator.Send("CreateCar", &request); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-
 	c.JSON(http.StatusCreated, car)
+}
+
+func (h *CarHandler) GetCars(c *gin.Context) {
+	request := api.QueryRequest[any]{}
+
+	resp, err := h.mediator.SendQuery("GetCars", &request)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, resp)
 }

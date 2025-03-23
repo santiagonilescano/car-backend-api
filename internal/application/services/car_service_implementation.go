@@ -20,3 +20,7 @@ func NewCarService(repo repositories.CarRepository) services.CarService {
 func (s *CarServiceImpl) CreateCar(ctx context.Context, car *entities.Car) error {
 	return s.repo.Create(ctx, car)
 }
+
+func (s *CarServiceImpl) GetCars(ctx context.Context) ([]*entities.Car, error) {
+	return s.repo.List()
+}
