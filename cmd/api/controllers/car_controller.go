@@ -1,24 +1,24 @@
-// internal/infrastructure/api/handlers/car_handler.go
+// cmd/api/controllers/car_handler.go
 
-package handlers
+package controllers
 
 import (
+	api "car-service/cmd/api/mediator"
 	"car-service/internal/application/commands"
-	api "car-service/internal/infrastructure/api/mediator"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
 )
 
-type CarHandler struct {
+type CarController struct {
 	mediator *api.Mediator
 }
 
-func NewCarHandler(mediator *api.Mediator) *CarHandler {
-	return &CarHandler{mediator: mediator}
+func NewCarController(mediator *api.Mediator) *CarController {
+	return &CarController{mediator: mediator}
 }
 
-func (h *CarHandler) CreateCar(c *gin.Context) {
+func (h *CarController) CreateCar(c *gin.Context) {
 	var car commands.NewCarRequest
 	if err := c.ShouldBindJSON(&car); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -34,7 +34,7 @@ func (h *CarHandler) CreateCar(c *gin.Context) {
 	c.JSON(http.StatusCreated, car)
 }
 
-func (h *CarHandler) GetCars(c *gin.Context) {
+func (h *CarController) GetCars(c *gin.Context) {
 	request := api.QueryRequest[any]{}
 
 	resp, err := h.mediator.SendQuery("GetCars", &request)

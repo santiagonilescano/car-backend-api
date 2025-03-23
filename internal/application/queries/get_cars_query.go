@@ -1,10 +1,9 @@
 package queries
 
 import (
+	api "car-service/cmd/api/mediator"
 	"car-service/internal/domain/services"
 	"context"
-
-	api "car-service/internal/infrastructure/api/mediator"
 )
 
 type GetCarsQuery struct {

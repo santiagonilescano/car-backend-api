@@ -1,14 +1,14 @@
 package routes
 
 import (
-	"car-service/internal/infrastructure/api/handlers"
+	"car-service/cmd/api/controllers"
 
 	"github.com/gin-gonic/gin"
 )
 
 // Config contiene todas las dependencias necesarias para las rutas
 type Config struct {
-	CarHandler *handlers.CarHandler
+	CarController *controllers.CarController
 	// Aquí se agregarán más handlers según sea necesario
 }
 
@@ -18,7 +18,7 @@ func SetupRoutes(router *gin.Engine, config *Config) {
 	v1 := router.Group("/api/v1")
 
 	// Configurar rutas de cars
-	SetupCarRoutes(v1, config.CarHandler)
+	SetupCarRoutes(v1, *config.CarController)
 
 	// Aquí se agregarán más configuraciones de rutas
 	// SetupUserRoutes(v1, config.UserHandler)

@@ -1,15 +1,15 @@
 package main
 
 import (
+	"car-service/cmd/api/controllers"
+	api "car-service/cmd/api/mediator"
+	"car-service/cmd/api/server"
 	"car-service/internal/application/commands"
 	"car-service/internal/application/queries"
 	"car-service/internal/application/services"
 	"car-service/internal/domain/repositories"
-	"car-service/internal/infrastructure/api/handlers"
-	api "car-service/internal/infrastructure/api/mediator"
-	"car-service/internal/infrastructure/api/server"
-	gormrepo "car-service/internal/infrastructure/persistence/gorm"
-	"car-service/internal/infrastructure/persistence/migrations"
+	gormrepo "car-service/internal/infrastructure/gorm"
+	"car-service/internal/infrastructure/migrations"
 	"car-service/pkg/config"
 	"log"
 	"os"
@@ -48,12 +48,12 @@ func run() error {
 	mediator.Register("CreateCar", newCarCommand)
 	mediator.RegisterQuery("GetCars", queries.NewGetCarsQuery(carService))
 
-	carHandler := handlers.NewCarHandler(mediator)
+	carController := controllers.NewCarController(mediator)
 
 	// Configurar el servidor
 	serverCfg := &server.ServerConfig{
-		CarHandler: carHandler,
-		Port:       env.ServerPort,
+		CarController: carController,
+		Port:          env.ServerPort,
 	}
 
 	// Crear y configurar el servidor

@@ -1,4 +1,4 @@
-// internal/infrastructure/persistence/migrations/000001_init_schema.go
+// internal/infrastructure/migrations/000001_init_schema.go
 
 package migrations
 

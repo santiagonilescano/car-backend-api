@@ -9,9 +9,9 @@ import (
 	"syscall"
 	"time"
 
-	"car-service/internal/infrastructure/api/handlers"
-	"car-service/internal/infrastructure/api/middleware"
-	"car-service/internal/infrastructure/api/routes"
+	"car-service/cmd/api/controllers"
+	"car-service/cmd/api/middleware"
+	"car-service/cmd/api/routes"
 
 	"github.com/gin-gonic/gin"
 )
@@ -24,8 +24,8 @@ type Server struct {
 
 // ServerConfig contiene todas las dependencias necesarias para el servidor
 type ServerConfig struct {
-	CarHandler *handlers.CarHandler
-	Port       string
+	CarController *controllers.CarController
+	Port          string
 }
 
 // NewServer crea una nueva instancia del servidor
@@ -37,7 +37,7 @@ func NewServer(config *ServerConfig) *Server {
 
 	// Configurar rutas
 	routesConfig := &routes.Config{
-		CarHandler: config.CarHandler,
+		CarController: config.CarController,
 	}
 	routes.SetupRoutes(router, routesConfig)
 

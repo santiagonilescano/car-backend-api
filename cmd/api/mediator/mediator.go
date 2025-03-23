@@ -1,6 +1,6 @@
-// internal/infrastructure/api/mediator.go
+// cmd/api/mediator/mediator.go
 
-package api
+package mediator
 
 import (
 	"context"

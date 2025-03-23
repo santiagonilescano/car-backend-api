@@ -3,9 +3,9 @@
 package commands
 
 import (
+	api "car-service/cmd/api/mediator"
 	"car-service/internal/domain/entities"
 	"car-service/internal/domain/services"
-	api "car-service/internal/infrastructure/api/mediator"
 	"context"
 
 	"github.com/google/uuid"

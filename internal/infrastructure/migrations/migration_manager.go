@@ -1,4 +1,4 @@
-// internal/infrastructure/persistence/migrations/migration_manager.go
+// internal/infrastructure/migrations/migration_manager.go
 
 package migrations
 
