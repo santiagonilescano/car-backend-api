@@ -11,6 +11,7 @@ func SetupCarRoutes(router *gin.RouterGroup, carHandler *handlers.CarHandler) {
 	cars := router.Group("/cars")
 	{
 		cars.POST("", carHandler.CreateCar)
+		cars.GET("", carHandler.GetCars)
 		// Aquí irán más rutas relacionadas con cars:
 		// cars.GET("", carHandler.ListCars)
 		// cars.GET("/:id", carHandler.GetCar)
