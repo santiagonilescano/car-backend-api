@@ -9,6 +9,17 @@ import (
 	"sync"
 )
 
+// Definición de la interfaz CommandRequest
+type CommandRequest[TResponse any] struct {
+	Data TResponse
+	// Aquí puedes agregar métodos que sean comunes a todos los CommandRequests
+}
+
+// Actualización de la interfaz CommandHandler
+type CommandHandler[T any, R any] interface {
+	Execute(request T, ctx context.Context) (R, error)
+}
+
 type Mediator struct {
 	handlers map[string]CommandHandler[CommandRequest[any], any]
 	mu       sync.RWMutex
@@ -42,7 +53,7 @@ func (m *Mediator) Send(command string, data *CommandRequest[any]) error {
 	return nil
 }
 
-func (m *Mediator) executeWithPipeline(handler CommandHandler[CommandRequest[any], any], data CommandRequest[any]) error {
+func (m *Mediator) executeWithPipeline(handler CommandHandler[CommandRequest[any], any], data *CommandRequest[any]) error {
 	// 1. Logging
 	log.Printf("Executing command: %T", handler)
 
@@ -57,7 +68,7 @@ func (m *Mediator) executeWithPipeline(handler CommandHandler[CommandRequest[any
 	// Aquí deberías iniciar una transacción y pasarla al handler
 	// db.Begin() y luego commit o rollback según el resultado
 
-	_, err := handler.Execute(data, context.Background())
+	_, err := handler.Execute(*data, context.Background())
 	if err != nil {
 		return err
 	}

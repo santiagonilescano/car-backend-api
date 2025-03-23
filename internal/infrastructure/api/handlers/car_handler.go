@@ -5,6 +5,7 @@ package handlers
 import (
 	"car-service/internal/application/commands"
 	api "car-service/internal/infrastructure/api/mediator"
+	"fmt"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -25,11 +26,13 @@ func (h *CarHandler) CreateCar(c *gin.Context) {
 		return
 	}
 
+	fmt.Println(&car.ModelId)
+
 	// Usar el mediador para enviar el comando
-	if err := h.mediator.Send("CreateCar", &car); err != nil {
+	request := api.CommandRequest[any]{Data: car}
+	if err := h.mediator.Send("CreateCar", &request); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-
 	c.JSON(http.StatusCreated, car)
 }
