@@ -42,7 +42,7 @@ func run() error {
 	var carRepo repositories.CarRepository = gormrepo.NewCarRepository(db)
 	carService := services.NewCarService(carRepo)
 
-	mediator := api.NewMediator()
+	mediator := api.NewMediator(db)
 
 	newCarCommand := commands.NewNewCarCommand(carService)
 	mediator.Register("CreateCar", newCarCommand)

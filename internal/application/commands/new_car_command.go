@@ -37,5 +37,5 @@ func (c *NewCarCommand) Execute(request api.CommandRequest[any], ctx context.Con
 		Color:   request.Data.(NewCarRequest).Color,
 		VIN:     request.Data.(NewCarRequest).Vin,
 	}
-	return c.service.CreateCar(context.Background(), &car), nil
+	return c.service.CreateCar(context.Background(), &car)
 }

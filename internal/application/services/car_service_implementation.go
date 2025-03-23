@@ -17,7 +17,7 @@ func NewCarService(repo repositories.CarRepository) services.CarService {
 	return &CarServiceImpl{repo: repo}
 }
 
-func (s *CarServiceImpl) CreateCar(ctx context.Context, car *entities.Car) error {
+func (s *CarServiceImpl) CreateCar(ctx context.Context, car *entities.Car) (*entities.Car, error) {
 	return s.repo.Create(ctx, car)
 }
 

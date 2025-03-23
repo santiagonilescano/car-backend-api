@@ -7,6 +7,8 @@ import (
 	"errors"
 	"log"
 	"sync"
+
+	"gorm.io/gorm"
 )
 
 // Definición de la interfaz CommandRequest
@@ -32,12 +34,14 @@ type Mediator struct {
 	handlers map[string]CommandHandler[CommandRequest[any], any]
 	queries  map[string]QueryHandler[QueryRequest[any], any]
 	mu       sync.RWMutex
+	db       *gorm.DB
 }
 
-func NewMediator() *Mediator {
+func NewMediator(db *gorm.DB) *Mediator {
 	return &Mediator{
 		handlers: make(map[string]CommandHandler[CommandRequest[any], any]),
 		queries:  make(map[string]QueryHandler[QueryRequest[any], any]),
+		db:       db,
 	}
 }
 
@@ -79,26 +83,24 @@ func (m *Mediator) SendQuery(query string, data *QueryRequest[any]) (any, error)
 }
 
 func (m *Mediator) executeWithPipeline(handler CommandHandler[CommandRequest[any], any], data *CommandRequest[any]) (any, error) {
-	// 1. Logging
-	log.Printf("Executing command: %T", handler)
 
-	// 2. Exception Handling
+	log.Printf("Executing Command: %T", handler)
+	tx := m.db.Begin()
+
 	defer func() {
 		if r := recover(); r != nil {
 			log.Printf("Recovered from panic: %v", r)
 		}
 	}()
 
-	// 3. Database Transaction (ejemplo simplificado)
-	// Aquí deberías iniciar una transacción y pasarla al handler
-	// db.Begin() y luego commit o rollback según el resultado
-
-	reponse, err := handler.Execute(*data, context.Background())
+	response, err := handler.Execute(*data, context.Background())
 	if err != nil {
+		tx.Rollback()
 		return nil, err
 	}
 
-	return reponse, nil
+	tx.Commit()
+	return response, nil
 }
 
 func (m *Mediator) executeWithPipelineQuery(handler QueryHandler[QueryRequest[any], any], data *QueryRequest[any]) (any, error) {

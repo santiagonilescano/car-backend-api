@@ -21,8 +21,8 @@ func NewCarRepository(db *gorm.DB) *CarRepository {
 }
 
 // Create guarda un nuevo auto en la base de datos
-func (r *CarRepository) Create(ctx context.Context, car *entities.Car) error {
-	return r.db.WithContext(ctx).Create(car).Error
+func (r *CarRepository) Create(ctx context.Context, car *entities.Car) (*entities.Car, error) {
+	return car, r.db.WithContext(ctx).Create(car).Error
 }
 
 // GetByID obtiene un auto por su ID

@@ -7,6 +7,6 @@ import (
 
 // CarService define las operaciones disponibles para los autos
 type CarService interface {
-	CreateCar(ctx context.Context, car *entities.Car) error
+	CreateCar(ctx context.Context, car *entities.Car) (*entities.Car, error)
 	GetCars(ctx context.Context) ([]*entities.Car, error)
 }
