@@ -18,6 +18,11 @@ import (
 	"gorm.io/gorm"
 )
 
+// @title Car Service API
+// @version 1.0
+// @description API para el servicio de autos
+// @host localhost:8080
+// @BasePath /api
 func main() {
 	if err := run(); err != nil {
 		log.Printf("Error: %v\n", err)
@@ -41,13 +46,10 @@ func run() error {
 	// Inicializar repositorios
 	var carRepo repositories.CarRepository = gormrepo.NewCarRepository(db)
 	carService := services.NewCarService(carRepo)
-
 	mediator := api.NewMediator(db)
-
 	newCarCommand := commands.NewNewCarCommand(carService)
 	mediator.Register("CreateCar", newCarCommand)
 	mediator.RegisterQuery("GetCars", queries.NewGetCarsQuery(carService))
-
 	carController := controllers.NewCarController(mediator)
 
 	// Configurar el servidor
@@ -62,6 +64,7 @@ func run() error {
 	// Iniciar el servidor (bloqueante)
 	return srv.Start()
 }
+
 func setupDatabase(env *config.Environment) (*gorm.DB, error) {
 	// Conectar a la base de datos
 	db, err := gorm.Open(postgres.Open(env.GetDSN()), &gorm.Config{})
@@ -74,6 +77,5 @@ func setupDatabase(env *config.Environment) (*gorm.DB, error) {
 		return nil, err
 	}
 	log.Println("Migraciones ejecutadas correctamente")
-
 	return db, nil
 }

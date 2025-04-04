@@ -31,7 +31,7 @@ func NewNewCarCommand(service services.CarService) *NewCarCommand {
 
 func (c *NewCarCommand) Execute(request api.CommandRequest[any], ctx context.Context) (any, error) {
 	car := entities.Car{
-		ModelID: request.Data.(NewCarRequest).ModelId,
+		ModelID: request.Data.(*NewCarRequest).ModelId,
 		OwnerID: request.Data.(NewCarRequest).OwnerId,
 		Year:    request.Data.(NewCarRequest).Year,
 		Color:   request.Data.(NewCarRequest).Color,

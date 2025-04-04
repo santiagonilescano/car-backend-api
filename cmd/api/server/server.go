@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"car-service/cmd/api/controllers"
-	"car-service/cmd/api/middleware"
 	"car-service/cmd/api/routes"
 
 	"github.com/gin-gonic/gin"
@@ -31,9 +30,6 @@ type ServerConfig struct {
 // NewServer crea una nueva instancia del servidor
 func NewServer(config *ServerConfig) *Server {
 	router := gin.Default()
-
-	// Configurar middleware global
-	router.Use(middleware.Logger())
 
 	// Configurar rutas
 	routesConfig := &routes.Config{
