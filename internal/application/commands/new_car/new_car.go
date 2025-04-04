@@ -1,6 +1,6 @@
-//internal/application/commands/new_car_command.go
+//internal/application/commands/new_car/new_car_command.go
 
-package commands
+package new_car
 
 import (
 	api "car-service/cmd/api/mediator"
@@ -10,6 +10,8 @@ import (
 
 	"github.com/google/uuid"
 )
+
+const Name = "CreateCar"
 
 type NewCarRequest struct {
 	ModelId uuid.UUID

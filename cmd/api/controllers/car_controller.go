@@ -5,7 +5,7 @@ package controllers
 import (
 	api "car-service/cmd/api/mediator"
 	"car-service/cmd/api/response"
-	"car-service/internal/application/commands"
+	"car-service/internal/application/commands/new_car"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -20,7 +20,7 @@ func NewCarController(mediator *api.Mediator) *CarController {
 }
 
 func (h *CarController) CreateCar(c *gin.Context) {
-	h.mediator.HandleGinRequest(c, "CreateCar", new(commands.NewCarRequest))
+	h.mediator.HandleGinRequest(c, new_car.Name, new(new_car.NewCarRequest))
 }
 
 func (h *CarController) GetCars(c *gin.Context) {
