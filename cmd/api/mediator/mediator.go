@@ -151,7 +151,7 @@ func (m *Mediator) executeWithPipeline(handler CommandHandler[CommandRequest[any
 	}()
 
 	// Ejecutar el comando pasando el contexto enriquecido
-	response, err := handler.Execute(*data, ctx)
+	response, err := handler.Execute(*data, &ctx.Context)
 	if err != nil {
 		tx.Rollback()
 		ctx.AddDecision(fmt.Sprintf("Error ejecutando el comando: %v", err))

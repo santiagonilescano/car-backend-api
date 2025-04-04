@@ -29,13 +29,14 @@ func NewNewCarCommand(service services.CarService) *NewCarCommand {
 	}
 }
 
-func (c *NewCarCommand) Execute(request api.CommandRequest[any], ctx context.Context) (any, error) {
+func (c *NewCarCommand) Execute(request api.CommandRequest[any], ctx *context.Context) (any, error) {
+	carRequest := request.Data.(*NewCarRequest)
 	car := entities.Car{
-		ModelID: request.Data.(*NewCarRequest).ModelId,
-		OwnerID: request.Data.(NewCarRequest).OwnerId,
-		Year:    request.Data.(NewCarRequest).Year,
-		Color:   request.Data.(NewCarRequest).Color,
-		VIN:     request.Data.(NewCarRequest).Vin,
+		ModelID: carRequest.ModelId,
+		OwnerID: carRequest.OwnerId,
+		Year:    carRequest.Year,
+		Color:   carRequest.Color,
+		VIN:     carRequest.Vin,
 	}
-	return c.service.CreateCar(context.Background(), &car)
+	return c.service.CreateCar(*ctx, &car)
 }
