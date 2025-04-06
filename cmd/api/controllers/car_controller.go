@@ -23,6 +23,5 @@ func (h *CarController) CreateCar(c *gin.Context) {
 }
 
 func (h *CarController) GetCars(c *gin.Context) {
-	request := api.QueryRequest[any]{}
-	h.mediator.Send(c, api.Query, get_cars.Name, request)
+	h.mediator.Send(c, api.Query, get_cars.Name, api.QueryRequest[any]{})
 }

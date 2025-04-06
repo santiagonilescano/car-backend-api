@@ -57,8 +57,6 @@ func (c *NewCarCommand) Validate(ctx *gin.Context, commandContext *api.CommandCo
 
 	ctx.Request.Body = io.NopCloser(bytes.NewBuffer(body))
 
-	log.Printf("Cuerpo de la solicitud: %s", string(body))
-
 	var request NewCarRequest
 	if err := json.Unmarshal(body, &request); err != nil {
 		log.Printf("Error al deserializar JSON: %v", err)
