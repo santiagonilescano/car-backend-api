@@ -58,3 +58,13 @@ func (r *CarRepository) List() ([]*entities.Car, error) {
 	err := r.db.Find(&cars).Error
 	return cars, err
 }
+
+// GetByVIN obtiene un auto por su número de VIN
+func (r *CarRepository) GetByVIN(vin string) (*entities.Car, error) {
+	var car entities.Car
+	err := r.db.Where("vin = ?", vin).First(&car).Error
+	if err != nil {
+		return nil, err
+	}
+	return &car, nil
+}

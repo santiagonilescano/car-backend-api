@@ -20,7 +20,7 @@ type QueryRequest[TResponse any] struct {
 
 type CommandHandler[T any, R any] interface {
 	Execute(request T, ctx *context.Context) (R, error)
-	Validate(c *gin.Context) []*ValidationError
+	Validate(c *gin.Context, ctx *CommandContext) []*ValidationError
 }
 
 type QueryHandler[T any, R any] interface {

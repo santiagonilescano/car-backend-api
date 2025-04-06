@@ -11,6 +11,7 @@ import (
 type CarRepository interface {
 	Create(ctx context.Context, car *entities.Car) (*entities.Car, error)
 	GetByID(id uuid.UUID) (*entities.Car, error)
+	GetByVIN(vin string) (*entities.Car, error)
 	Update(car *entities.Car) error
 	Delete(id uuid.UUID) error
 	GetByOwnerID(ownerID uuid.UUID) ([]*entities.Car, error)

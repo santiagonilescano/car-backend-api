@@ -4,6 +4,7 @@ package mediator
 
 import (
 	"car-service/cmd/api/response"
+	"car-service/internal/domain/errors"
 	"context"
 	"fmt"
 	"io"
@@ -84,7 +85,7 @@ func (m *Mediator) Send(c *gin.Context, actionType string, name string, requestT
 
 	m.LogRequest(c, cmdCtx, requestType)
 
-	if actionType == "query" {
+	if actionType == Query {
 		m.mu.RLock()
 		selectedQuery := m.queries[name]
 		m.mu.RUnlock()
@@ -92,12 +93,10 @@ func (m *Mediator) Send(c *gin.Context, actionType string, name string, requestT
 		result, err := m.ExecuteQuery(selectedQuery, queryRequest)
 
 		if err != nil {
-			response.JSON(c, http.StatusInternalServerError, http.StatusInternalServerError,
-				"Error al ejecutar query", nil, []string{err.Error()}, cmdCtx.decisions)
+			response.JSON(c, http.StatusInternalServerError, "Error al ejecutar query", nil, []string{err.Error()}, cmdCtx.decisions)
 			return
 		} else {
-			response.JSON(c, http.StatusOK, http.StatusOK,
-				"Operación completada con éxito", result, nil, cmdCtx.decisions)
+			response.JSON(c, http.StatusOK, "Operación completada con éxito", result, nil, cmdCtx.decisions)
 			return
 		}
 	} else {
@@ -107,18 +106,24 @@ func (m *Mediator) Send(c *gin.Context, actionType string, name string, requestT
 		commandRequest := &CommandRequest[any]{Data: requestType}
 		validationsErrors := m.Validate(c, selectedCommand, cmdCtx)
 		if validationsErrors != nil {
-			response.JSON(c, http.StatusBadRequest, http.StatusBadRequest,
+			response.JSON(c, http.StatusBadRequest,
 				"Bad Request", nil, validationsErrors, cmdCtx.decisions)
 			return
 		} else {
 			result, err := m.ExecuteCommand(selectedCommand, commandRequest, cmdCtx)
 
 			if err != nil {
-				response.JSON(c, http.StatusInternalServerError, http.StatusInternalServerError,
+				if businessErr, ok := err.(*errors.BusinessError); ok {
+					response.JSON(c, http.StatusConflict,
+						"Error de negocio", nil, []string{businessErr.Message}, cmdCtx.decisions)
+					return
+				}
+
+				response.JSON(c, http.StatusInternalServerError,
 					"Error al ejecutar el comando", nil, []string{err.Error()}, cmdCtx.decisions)
 				return
 			} else {
-				response.JSON(c, http.StatusCreated, http.StatusCreated,
+				response.JSON(c, http.StatusCreated,
 					"Operación completada con éxito", result, nil, cmdCtx.decisions)
 				return
 			}
