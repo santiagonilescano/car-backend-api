@@ -62,7 +62,7 @@ func (m *Mediator) LogRequest(c *gin.Context, cmdCtx *CommandContext, requestTyp
 
 func (m *Mediator) Validate(c *gin.Context, command CommandHandler[CommandRequest[any], any], cmdCtx *CommandContext) []string {
 	if validator, ok := command.(CommandValidator); ok {
-		validationErrors := validator.Validate(c)
+		validationErrors := validator.Validate(c, cmdCtx)
 		if len(validationErrors) > 0 {
 			errorMessages := make([]string, len(validationErrors))
 			for i, err := range validationErrors {

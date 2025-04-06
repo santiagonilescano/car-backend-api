@@ -12,5 +12,5 @@ func (e *ValidationError) Error() string {
 }
 
 type CommandValidator interface {
-	Validate(c *gin.Context) []*ValidationError
+	Validate(c *gin.Context, ctx *CommandContext) []*ValidationError
 }

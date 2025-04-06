@@ -38,7 +38,7 @@ func NewNewCarCommand(service services.CarService) *NewCarCommand {
 	}
 }
 
-func (c *NewCarCommand) Validate(ctx *gin.Context) []*api.ValidationError {
+func (c *NewCarCommand) Validate(ctx *gin.Context, commandContext *api.CommandContext) []*api.ValidationError {
 	var errors []*api.ValidationError
 
 	if ctx.Request.Body == nil || ctx.Request.ContentLength == 0 {
@@ -91,6 +91,11 @@ func (c *NewCarCommand) Validate(ctx *gin.Context) []*api.ValidationError {
 			Field:   "vin",
 			Message: "El VIN debe tener 17 caracteres",
 		})
+	}
+
+	if request.Year == 0 {
+		request.Year = time.Now().Year()
+		commandContext.AddDecision("Se utilizará el año en curso ya que no fue informado")
 	}
 
 	if request.Year < 1900 || request.Year > time.Now().Year()+1 {
