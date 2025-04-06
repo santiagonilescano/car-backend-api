@@ -45,7 +45,10 @@ func run() error {
 
 	// Inicializar repositorios
 	var carRepo repositories.CarRepository = gormrepo.NewCarRepository(db)
-	carService := services.NewCarService(carRepo)
+	var modelRepo repositories.ModelRepository = gormrepo.NewModelRepository(db)
+	var ownerRepo repositories.OwnerRepository = gormrepo.NewOwnerRepository(db)
+
+	carService := services.NewCarService(carRepo, modelRepo, ownerRepo)
 	mediator := api.NewMediator(db)
 	mediator.RegisterCommand(new_car.Name, new_car.NewNewCarCommand(carService))
 	mediator.RegisterQuery(get_cars.Name, get_cars.NewGetCarsQuery(carService))

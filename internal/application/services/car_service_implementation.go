@@ -11,22 +11,48 @@ import (
 )
 
 type CarServiceImpl struct {
-	repo repositories.CarRepository
+	carRepo   repositories.CarRepository
+	modelRepo repositories.ModelRepository
+	ownerRepo repositories.OwnerRepository
 }
 
-func NewCarService(repo repositories.CarRepository) services.CarService {
-	return &CarServiceImpl{repo: repo}
+func NewCarService(
+	carRepo repositories.CarRepository,
+	modelRepo repositories.ModelRepository,
+	ownerRepo repositories.OwnerRepository,
+) services.CarService {
+	return &CarServiceImpl{
+		carRepo:   carRepo,
+		modelRepo: modelRepo,
+		ownerRepo: ownerRepo,
+	}
 }
 
 func (s *CarServiceImpl) CreateCar(ctx context.Context, car *entities.Car) (*entities.Car, error) {
-	existingCar, err := s.repo.GetByVIN(car.VIN)
+	existingCar, err := s.carRepo.GetByVIN(car.VIN)
 	if err == nil && existingCar != nil {
 		return nil, errors.NewBusinessError("DUPLICATE_VIN", "Ya existe un vehículo con este número de VIN")
 	}
 
-	return s.repo.Create(ctx, car)
+	modelExists, err := s.modelRepo.ExistsByID(car.ModelID)
+	if err != nil {
+		return nil, err
+	}
+	if !modelExists {
+		return nil, errors.NewBusinessError("MODEL_NOT_FOUND", "El modelo especificado no existe")
+	}
+
+	ownerExists, err := s.ownerRepo.ExistsByID(car.OwnerID)
+	if err != nil {
+		return nil, err
+	}
+	if !ownerExists {
+		return nil, errors.NewBusinessError("OWNER_NOT_FOUND", "El propietario especificado no existe")
+	}
+
+	return s.carRepo.Create(ctx, car)
 }
 
 func (s *CarServiceImpl) GetCars(ctx context.Context) ([]*entities.Car, error) {
-	return s.repo.List()
+	return s.carRepo.List()
 }
