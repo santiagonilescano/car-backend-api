@@ -5,51 +5,21 @@ package mediator
 import (
 	"car-service/cmd/api/response"
 	"context"
-	"errors"
 	"fmt"
+	"io"
 	"log"
 	"net/http"
 	"sync"
+
+	"bytes"
+	"encoding/json"
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 )
 
-// CommandContext mantiene el contexto y las decisiones
-type CommandContext struct {
-	context.Context
-	decisions []string
-	mu        sync.Mutex
-}
-
-// AddDecision agrega una decisión al contexto
-func (c *CommandContext) AddDecision(decision string) {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-	c.decisions = append(c.decisions, decision)
-}
-
-// Definición de la interfaz CommandRequest
-type CommandRequest[TResponse any] struct {
-	Data TResponse
-	// Aquí puedes agregar métodos que sean comunes a todos los CommandRequests
-}
-
-type QueryRequest[TResponse any] struct {
-	Data TResponse
-}
-
-// Actualización de la interfaz CommandHandler
-type CommandHandler[T any, R any] interface {
-	Execute(request T, ctx *context.Context) (R, error)
-}
-
-type QueryHandler[T any, R any] interface {
-	Execute(request T, ctx context.Context) (R, error)
-}
-
 type Mediator struct {
-	handlers map[string]CommandHandler[CommandRequest[any], any]
+	commands map[string]CommandHandler[CommandRequest[any], any]
 	queries  map[string]QueryHandler[QueryRequest[any], any]
 	mu       sync.RWMutex
 	db       *gorm.DB
@@ -57,16 +27,16 @@ type Mediator struct {
 
 func NewMediator(db *gorm.DB) *Mediator {
 	return &Mediator{
-		handlers: make(map[string]CommandHandler[CommandRequest[any], any]),
+		commands: make(map[string]CommandHandler[CommandRequest[any], any]),
 		queries:  make(map[string]QueryHandler[QueryRequest[any], any]),
 		db:       db,
 	}
 }
 
-func (m *Mediator) Register(command string, handler CommandHandler[CommandRequest[any], any]) {
+func (m *Mediator) RegisterCommand(command string, handler CommandHandler[CommandRequest[any], any]) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	m.handlers[command] = handler
+	m.commands[command] = handler
 }
 
 func (m *Mediator) RegisterQuery(query string, handler QueryHandler[QueryRequest[any], any]) {
@@ -75,112 +45,134 @@ func (m *Mediator) RegisterQuery(query string, handler QueryHandler[QueryRequest
 	m.queries[query] = handler
 }
 
-// HandleGinRequest maneja una solicitud completa desde Gin
-func (m *Mediator) HandleGinRequest(c *gin.Context, commandName string, requestType interface{}) {
-	// Crear contexto enriquecido
+func (m *Mediator) LogRequest(c *gin.Context, cmdCtx *CommandContext, requestType any) {
+	log.Printf("Procesando solicitud: Content-Type=%s, Content-Length=%d, Path=%s", c.GetHeader("Content-Type"), c.Request.ContentLength, c.Request.URL.Path)
+	body, err := io.ReadAll(c.Request.Body)
+	if err != nil {
+		log.Printf("Error al leer el cuerpo de la solicitud: %v", err)
+	} else {
+		c.Request.Body = io.NopCloser(bytes.NewBuffer(body))
+		log.Printf("Cuerpo de la solicitud: %s", string(body))
+		if err := json.Unmarshal(body, requestType); err != nil {
+			log.Printf("Error al deserializar JSON: %v", err)
+			return
+		}
+	}
+}
+
+func (m *Mediator) Validate(c *gin.Context, command CommandHandler[CommandRequest[any], any], cmdCtx *CommandContext) []string {
+	if validator, ok := command.(CommandValidator); ok {
+		validationErrors := validator.Validate(c)
+		if len(validationErrors) > 0 {
+			errorMessages := make([]string, len(validationErrors))
+			for i, err := range validationErrors {
+				errorMessages[i] = fmt.Sprintf("%s: %s", err.Field, err.Message)
+			}
+			return errorMessages
+
+		}
+		return nil
+	}
+	return nil
+}
+
+func (m *Mediator) Send(c *gin.Context, actionType string, name string, requestType any) {
 	cmdCtx := &CommandContext{
 		Context:   c.Request.Context(),
-		decisions: []string{fmt.Sprintf("Solicitud desde IP: %s", c.ClientIP())},
+		decisions: []string{},
 	}
 
-	// Intentar vincular JSON
-	if err := c.ShouldBindJSON(requestType); err != nil {
-		response.JSON(c, http.StatusBadRequest, http.StatusBadRequest,
-			"Error al procesar la solicitud", nil, []string{err.Error()}, cmdCtx.decisions)
-		return
+	m.LogRequest(c, cmdCtx, requestType)
+
+	if actionType == "query" {
+		m.mu.RLock()
+		selectedQuery := m.queries[name]
+		m.mu.RUnlock()
+		queryRequest := &QueryRequest[any]{Data: requestType}
+		result, err := m.ExecuteQuery(selectedQuery, queryRequest)
+
+		if err != nil {
+			response.JSON(c, http.StatusInternalServerError, http.StatusInternalServerError,
+				"Error al ejecutar query", nil, []string{err.Error()}, cmdCtx.decisions)
+			return
+		} else {
+			response.JSON(c, http.StatusOK, http.StatusOK,
+				"Operación completada con éxito", result, nil, cmdCtx.decisions)
+			return
+		}
+	} else {
+		m.mu.RLock()
+		selectedCommand := m.commands[name]
+		m.mu.RUnlock()
+		commandRequest := &CommandRequest[any]{Data: requestType}
+		validationsErrors := m.Validate(c, selectedCommand, cmdCtx)
+		if validationsErrors != nil {
+			response.JSON(c, http.StatusBadRequest, http.StatusBadRequest,
+				"Bad Request", nil, validationsErrors, cmdCtx.decisions)
+			return
+		} else {
+			result, err := m.ExecuteCommand(selectedCommand, commandRequest, cmdCtx)
+
+			if err != nil {
+				response.JSON(c, http.StatusInternalServerError, http.StatusInternalServerError,
+					"Error al ejecutar el comando", nil, []string{err.Error()}, cmdCtx.decisions)
+				return
+			} else {
+				response.JSON(c, http.StatusCreated, http.StatusCreated,
+					"Operación completada con éxito", result, nil, cmdCtx.decisions)
+				return
+			}
+		}
 	}
-
-	// Crear solicitud de comando
-	request := &CommandRequest[any]{Data: requestType}
-
-	// Ejecutar comando
-	result, err := m.executeCommand(commandName, request, cmdCtx)
-
-	// Manejar resultado
-	if err != nil {
-		response.JSON(c, http.StatusInternalServerError, http.StatusInternalServerError,
-			"Error al ejecutar el comando", nil, []string{err.Error()}, cmdCtx.decisions)
-		return
-	}
-
-	// Respuesta exitosa
-	response.JSON(c, http.StatusOK, http.StatusOK,
-		"Operación completada con éxito", result, nil, cmdCtx.decisions)
 }
 
-// executeCommand busca y ejecuta un comando
-func (m *Mediator) executeCommand(commandName string, request *CommandRequest[any], ctx *CommandContext) (any, error) {
-	// Buscar handler
-	m.mu.RLock()
-	handler, exists := m.handlers[commandName]
-	m.mu.RUnlock()
+func (m *Mediator) ExecuteQuery(query QueryHandler[QueryRequest[any], any], data *QueryRequest[any]) (any, error) {
+	log.Printf("Executing query: %T", query)
 
-	if !exists {
-		return nil, errors.New("handler not found")
-	}
-
-	// Ejecutar con pipeline
-	return m.executeWithPipeline(handler, request, ctx)
-}
-
-func (m *Mediator) SendQuery(query string, data *QueryRequest[any]) (any, error) {
-	m.mu.RLock()
-	defer m.mu.RUnlock()
-	queries, exists := m.queries[query]
-	if !exists {
-		return nil, errors.New("handler not found")
-	}
-
-	resp, err := m.executeWithPipelineQuery(queries, data)
-	return resp, err
-}
-
-// executeWithPipeline ejecuta un comando dentro de una transacción y recoge decisiones
-func (m *Mediator) executeWithPipeline(handler CommandHandler[CommandRequest[any], any],
-	data *CommandRequest[any],
-	ctx *CommandContext) (any, error) {
-	log.Printf("Executing Command: %T", handler)
-	tx := m.db.Begin()
-
+	var panicErr error
 	defer func() {
 		if r := recover(); r != nil {
-			tx.Rollback()
-			ctx.AddDecision(fmt.Sprintf("Recovered from panic: %v", r))
-			log.Printf("Recovered from panic: %v", r)
+			panicErr = fmt.Errorf("panic: %v", r)
 		}
 	}()
 
-	// Ejecutar el comando pasando el contexto enriquecido
-	response, err := handler.Execute(*data, &ctx.Context)
-	if err != nil {
-		tx.Rollback()
-		ctx.AddDecision(fmt.Sprintf("Error ejecutando el comando: %v", err))
-		return nil, err
+	if panicErr != nil {
+		return nil, panicErr
 	}
 
-	if err := tx.Commit().Error; err != nil {
-		ctx.AddDecision(fmt.Sprintf("Error al confirmar la transacción: %v", err))
-		return nil, err
-	}
-
-	return response, nil
-}
-
-func (m *Mediator) executeWithPipelineQuery(handler QueryHandler[QueryRequest[any], any], data *QueryRequest[any]) (any, error) {
-	// 1. Logging
-	log.Printf("Executing query: %T", handler)
-
-	// 2. Exception Handling
-	defer func() {
-		if r := recover(); r != nil {
-			log.Printf("Recovered from panic: %v", r)
-		}
-	}()
-
-	reponse, err := handler.Execute(*data, context.Background())
+	reponse, err := query.Execute(*data, context.Background())
 	if err != nil {
 		return nil, err
 	}
 
 	return reponse, nil
+}
+
+func (m *Mediator) ExecuteCommand(command CommandHandler[CommandRequest[any], any], data *CommandRequest[any], ctx *CommandContext) (any, error) {
+	log.Printf("Executing Command: %T", command)
+	tx := m.db.Begin()
+
+	var panicErr error
+	defer func() {
+		if r := recover(); r != nil {
+			panicErr = fmt.Errorf("panic: %v", r)
+			tx.Rollback()
+		}
+	}()
+
+	if panicErr != nil {
+		return nil, panicErr
+	}
+
+	response, err := command.Execute(*data, &ctx.Context)
+	if err != nil {
+		tx.Rollback()
+		return nil, err
+	}
+
+	if err := tx.Commit().Error; err != nil {
+		return nil, err
+	}
+
+	return response, nil
 }

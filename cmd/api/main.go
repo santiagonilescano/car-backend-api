@@ -5,7 +5,7 @@ import (
 	api "car-service/cmd/api/mediator"
 	"car-service/cmd/api/server"
 	"car-service/internal/application/commands/new_car"
-	"car-service/internal/application/queries"
+	"car-service/internal/application/queries/get_cars"
 	"car-service/internal/application/services"
 	"car-service/internal/domain/repositories"
 	gormrepo "car-service/internal/infrastructure/gorm"
@@ -47,9 +47,8 @@ func run() error {
 	var carRepo repositories.CarRepository = gormrepo.NewCarRepository(db)
 	carService := services.NewCarService(carRepo)
 	mediator := api.NewMediator(db)
-	newCarCommand := new_car.NewNewCarCommand(carService)
-	mediator.Register(new_car.Name, newCarCommand)
-	mediator.RegisterQuery("GetCars", queries.NewGetCarsQuery(carService))
+	mediator.RegisterCommand(new_car.Name, new_car.NewNewCarCommand(carService))
+	mediator.RegisterQuery(get_cars.Name, get_cars.NewGetCarsQuery(carService))
 	carController := controllers.NewCarController(mediator)
 
 	// Configurar el servidor

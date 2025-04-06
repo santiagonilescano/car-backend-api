@@ -1,10 +1,12 @@
-package queries
+package get_cars
 
 import (
 	api "car-service/cmd/api/mediator"
 	"car-service/internal/domain/services"
 	"context"
 )
+
+const Name = "GetCars"
 
 type GetCarsQuery struct {
 	service services.CarService
