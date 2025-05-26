@@ -50,7 +50,7 @@ func run() error {
 
 	carService := services.NewCarService(carRepo, modelRepo, ownerRepo)
 	mediator := api.NewMediator(db)
-	mediator.RegisterCommand(new_car.Name, new_car.NewNewCarCommand(carService))
+	mediator.RegisterCommand(new_car.Name, new_car.CreateNewCarCommand(carService))
 	mediator.RegisterQuery(get_cars.Name, get_cars.NewGetCarsQuery(carService))
 	carController := controllers.NewCarController(mediator)
 

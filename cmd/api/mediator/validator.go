@@ -1,7 +1,5 @@
 package mediator
 
-import "github.com/gin-gonic/gin"
-
 type ValidationError struct {
 	Field   string
 	Message string
@@ -12,5 +10,5 @@ func (e *ValidationError) Error() string {
 }
 
 type CommandValidator interface {
-	Validate(c *gin.Context, ctx *CommandContext) []*ValidationError
+	Validate(request CommandRequest[any], ctx *CommandContext) []*ValidationError
 }

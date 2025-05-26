@@ -61,7 +61,7 @@ func (m *Mediator) LogRequest(c *gin.Context, cmdCtx *CommandContext, requestTyp
 	}
 }
 
-func (m *Mediator) Validate(c *gin.Context, command CommandHandler[CommandRequest[any], any], cmdCtx *CommandContext) []string {
+func (m *Mediator) Validate(c CommandRequest[any], command CommandHandler[CommandRequest[any], any], cmdCtx *CommandContext) []string {
 	if validator, ok := command.(CommandValidator); ok {
 		validationErrors := validator.Validate(c, cmdCtx)
 		if len(validationErrors) > 0 {
@@ -104,7 +104,8 @@ func (m *Mediator) Send(c *gin.Context, actionType string, name string, requestT
 		selectedCommand := m.commands[name]
 		m.mu.RUnlock()
 		commandRequest := &CommandRequest[any]{Data: requestType}
-		validationsErrors := m.Validate(c, selectedCommand, cmdCtx)
+
+		validationsErrors := m.Validate(*commandRequest, selectedCommand, cmdCtx)
 		if validationsErrors != nil {
 			response.JSON(c, http.StatusBadRequest,
 				"Bad Request", nil, validationsErrors, cmdCtx.decisions)
