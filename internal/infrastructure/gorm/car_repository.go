@@ -26,9 +26,9 @@ func (r *CarRepository) Create(ctx context.Context, car *entities.Car) (*entitie
 }
 
 // GetByID obtiene un auto por su ID
-func (r *CarRepository) GetByID(id uuid.UUID) (*entities.Car, error) {
+func (r *CarRepository) GetByID(ctx context.Context, id uuid.UUID) (*entities.Car, error) {
 	var car entities.Car
-	err := r.db.First(&car, "id = ?", id).Error
+	err := r.db.WithContext(ctx).First(&car, "id = ?", id).Error
 	if err != nil {
 		return nil, err
 	}
@@ -36,18 +36,24 @@ func (r *CarRepository) GetByID(id uuid.UUID) (*entities.Car, error) {
 }
 
 // Update actualiza un auto existente
-func (r *CarRepository) Update(car *entities.Car) error {
-	return r.db.Save(car).Error
+func (r *CarRepository) Update(ctx context.Context, car *entities.Car) (*entities.Car, error) {
+	err := r.db.WithContext(ctx).Save(car).Error
+	if err != nil {
+		return nil, err
+	}
+	return car, nil
 }
 
 // Delete elimina un auto por su ID
 func (r *CarRepository) Delete(id uuid.UUID) error {
+	// Ensure context is used if required by future GORM versions or project policies
 	return r.db.Delete(&entities.Car{}, "id = ?", id).Error
 }
 
 // GetByOwnerID obtiene todos los autos de un propietario
 func (r *CarRepository) GetByOwnerID(ownerID uuid.UUID) ([]*entities.Car, error) {
 	var cars []*entities.Car
+	// Ensure context is used if required
 	err := r.db.Where("owner_id = ?", ownerID).Find(&cars).Error
 	return cars, err
 }
@@ -55,6 +61,7 @@ func (r *CarRepository) GetByOwnerID(ownerID uuid.UUID) ([]*entities.Car, error)
 // List obtiene todos los autos
 func (r *CarRepository) List() ([]*entities.Car, error) {
 	var cars []*entities.Car
+	// Ensure context is used if required
 	err := r.db.Find(&cars).Error
 	return cars, err
 }
@@ -62,6 +69,7 @@ func (r *CarRepository) List() ([]*entities.Car, error) {
 // GetByVIN obtiene un auto por su número de VIN
 func (r *CarRepository) GetByVIN(vin string) (*entities.Car, error) {
 	var car entities.Car
+	// Ensure context is used if required
 	err := r.db.Where("vin = ?", vin).First(&car).Error
 	if err != nil {
 		return nil, err

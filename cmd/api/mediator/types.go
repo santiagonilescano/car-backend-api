@@ -10,29 +10,35 @@ import (
 const Query = "query"
 const Command = "command"
 
-type CommandRequest[TResponse any] struct {
-	Data TResponse
+// ValidationError defines the structure for a validation error.
+type ValidationError struct {
+	Field   string `json:"field"`
+	Message string `json:"message"`
 }
 
-type QueryRequest[TResponse any] struct {
-	Data TResponse
+// CommandHandler defines the interface for command handlers.
+// TRequest is the type of the request (command) data.
+// TResponse is the type of the response data.
+type CommandHandler[TRequest any, TResponse any] interface {
+	Execute(request TRequest, ctx *context.Context) (TResponse, error)
+	Validate(request TRequest, c *gin.Context, cmdCtx *CommandContext) []*ValidationError
 }
 
-type CommandHandler[T any, R any] interface {
-	Execute(request T, ctx *context.Context) (R, error)
-	Validate(c *gin.Context, ctx *CommandContext) []*ValidationError
+// QueryHandler defines the interface for query handlers.
+// TRequest is the type of the request (query) data.
+// TResponse is the type of the response data.
+type QueryHandler[TRequest any, TResponse any] interface {
+	Execute(request TRequest, ctx context.Context) (TResponse, error)
 }
 
-type QueryHandler[T any, R any] interface {
-	Execute(request T, ctx context.Context) (R, error)
-}
-
+// CommandContext holds context for command execution, including decisions.
 type CommandContext struct {
 	context.Context
 	decisions []string
 	mu        sync.Mutex
 }
 
+// AddDecision records a decision made during command processing.
 func (c *CommandContext) AddDecision(decision string) {
 	c.mu.Lock()
 	defer c.mu.Unlock()

@@ -2,9 +2,11 @@ package main
 
 import (
 	"car-service/cmd/api/controllers"
-	api "car-service/cmd/api/mediator"
+	"car-service/cmd/api/mediator"
 	"car-service/cmd/api/server"
 	"car-service/internal/application/commands/new_car"
+	"car-service/internal/application/commands/update_car" // Added for UpdateCar
+	"car-service/internal/application/queries/get_car_by_id" // Added for GetCarByID
 	"car-service/internal/application/queries/get_cars"
 	"car-service/internal/application/services"
 	"car-service/internal/domain/repositories"
@@ -48,11 +50,18 @@ func run() error {
 	var modelRepo repositories.ModelRepository = gormrepo.NewModelRepository(db)
 	var ownerRepo repositories.OwnerRepository = gormrepo.NewOwnerRepository(db)
 
+	// Inicializar servicios
 	carService := services.NewCarService(carRepo, modelRepo, ownerRepo)
-	mediator := api.NewMediator(db)
-	mediator.RegisterCommand(new_car.Name, new_car.NewNewCarCommand(carService))
-	mediator.RegisterQuery(get_cars.Name, get_cars.NewGetCarsQuery(carService))
-	carController := controllers.NewCarController(mediator)
+
+	// Inicializar mediator y registrar handlers
+	m := mediator.NewMediator(db)
+	m.RegisterCommand(new_car.Name, new_car.NewNewCarCommandHandler(carService))
+	m.RegisterCommand(update_car.Name, update_car.NewUpdateCarCommandHandler(carService)) // Register UpdateCar
+	m.RegisterQuery(get_cars.Name, get_cars.NewGetCarsQueryHandler(carService))
+	m.RegisterQuery(get_car_by_id.Name, get_car_by_id.NewGetCarByIDQueryHandler(carService)) // Register GetCarByID
+
+	// Inicializar controllers
+	carController := controllers.NewCarController(m)
 
 	// Configurar el servidor
 	serverCfg := &server.ServerConfig{
